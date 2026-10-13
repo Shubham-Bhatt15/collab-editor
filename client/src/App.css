@@ -1,0 +1,20 @@
+.page { max-width: 760px; margin: 40px auto; padding: 0 16px; font-family: system-ui, sans-serif; text-align: left; }
+.meta { color: #666; margin-bottom: 12px; }
+.editor .ProseMirror {
+  min-height: 300px; padding: 16px;
+  border: 1px solid #ccc; border-radius: 8px; outline: none;
+}
+.editor .ProseMirror p { margin: 0 0 8px; }
+
+.collaboration-cursor__caret {
+  position: relative; margin-left: -1px; margin-right: -1px;
+  border-left: 1px solid #0d0d0d; border-right: 1px solid #0d0d0d;
+  word-break: normal; pointer-events: none;
+}
+.collaboration-cursor__label {
+  position: absolute; top: -1.4em; left: -1px;
+  font-size: 12px; font-weight: 600; line-height: normal;
+  color: #fff; padding: 0.1rem 0.3rem; border-radius: 3px 3px 3px 0;
+  white-space: nowrap; user-select: none;
+  display: inline-block;
+}
