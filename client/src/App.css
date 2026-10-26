@@ -18,3 +18,10 @@
   white-space: nowrap; user-select: none;
   display: inline-block;
 }
+
+.login { display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
+.login input { padding: 8px; font-size: 16px; }
+button { padding: 8px 14px; cursor: pointer; }
+button.link { background: none; border: none; color: #1971c2; padding: 0; }
+.error { color: #e03131; }
+.docs { padding-left: 18px; }

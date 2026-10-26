@@ -1,46 +1,70 @@
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
-import { HocuspocusProvider } from "@hocuspocus/provider";
-import * as Y from "yjs";
+import { useEffect, useState } from "react";
+import Login from "./Login.jsx";
+import Editor from "./Editor.jsx";
+import { api } from "./api.js";
 import "./App.css";
 
-// Document name comes from the URL hash: http://localhost:5173/#my-doc
-const docName = window.location.hash.slice(1) || "demo";
-
-// Created once, outside React, so re-renders never create a second connection.
-const ydoc = new Y.Doc();
-const provider = new HocuspocusProvider({
-  url: "ws://localhost:1234",
-  name: docName,
-  document: ydoc,
-});
-
-// Temporary identity for cursors. Real users replace this in the auth step.
-const COLORS = ["#e03131", "#2f9e44", "#1971c2", "#f08c00", "#9c36b5", "#0c8599"];
-const user = {
-  name: "User " + Math.floor(Math.random() * 1000),
-  color: COLORS[Math.floor(Math.random() * COLORS.length)],
-};
-
 export default function App() {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({ history: false }), // Yjs handles undo/redo
-      Collaboration.configure({ document: ydoc }),
-      CollaborationCursor.configure({ provider, user }),
-    ],
-  });
+  const [auth, setAuth] = useState(() => JSON.parse(localStorage.getItem("auth") || "null"));
+  const [docs, setDocs] = useState([]);
+  const [docId, setDocId] = useState(window.location.hash.slice(1));
+
+  useEffect(() => {
+    const onHash = () => setDocId(window.location.hash.slice(1));
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  function logout() {
+    localStorage.removeItem("auth");
+    setAuth(null);
+    setDocs([]);
+  }
+
+  useEffect(() => {
+    if (!auth) return;
+    api("/documents", { token: auth.token }).then(setDocs).catch(logout);
+  }, [auth]);
+
+  function handleAuth(data) {
+    localStorage.setItem("auth", JSON.stringify(data));
+    setAuth(data);
+  }
+
+  async function createDoc() {
+    const d = await api("/documents", { method: "POST", token: auth.token, body: { title: "Untitled" } });
+    setDocs([d, ...docs]);
+    window.location.hash = d.id;
+  }
+
+  if (!auth) return <div className="page"><h1>Collab Editor</h1><Login onAuth={handleAuth} /></div>;
+
+  const current = docs.find((d) => d.id === docId);
 
   return (
     <div className="page">
       <h1>Collab Editor</h1>
       <p className="meta">
-        Document: <b>{docName}</b> · You are{" "}
-        <span style={{ color: user.color }}>{user.name}</span>
+        Logged in as <b>{auth.user.name}</b> · <button className="link" onClick={logout}>Log out</button>
       </p>
-      <EditorContent editor={editor} className="editor" />
+
+      {current ? (
+        <>
+          <button className="link" onClick={() => (window.location.hash = "")}>← All documents</button>
+          <Editor key={current.id} doc={current} token={auth.token} user={auth.user} />
+        </>
+      ) : (
+        <>
+          <button onClick={createDoc}>+ New document</button>
+          <ul className="docs">
+            {docs.map((d) => (
+              <li key={d.id}>
+                <a href={`#${d.id}`}>{d.title}</a> <span className="meta">({d.role})</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
