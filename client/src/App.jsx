@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import Login from "./Login.jsx";
 import Editor from "./Editor.jsx";
+import Dashboard from "./Dashboard.jsx";
+import ShareDialog from "./ShareDialog.jsx";
 import { api } from "./api.js";
 import "./App.css";
 
 export default function App() {
   const [auth, setAuth] = useState(() => JSON.parse(localStorage.getItem("auth") || "null"));
-  const [docs, setDocs] = useState([]);
+  const [docs, setDocs] = useState(null); // null means still loading
   const [docId, setDocId] = useState(window.location.hash.slice(1));
+  const [sharing, setSharing] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const onHash = () => setDocId(window.location.hash.slice(1));
@@ -18,7 +22,7 @@ export default function App() {
   function logout() {
     localStorage.removeItem("auth");
     setAuth(null);
-    setDocs([]);
+    setDocs(null);
   }
 
   useEffect(() => {
@@ -31,40 +35,73 @@ export default function App() {
     setAuth(data);
   }
 
-  async function createDoc() {
-    const d = await api("/documents", { method: "POST", token: auth.token, body: { title: "Untitled" } });
-    setDocs([d, ...docs]);
-    window.location.hash = d.id;
+  async function act(fn) {
+    setError("");
+    try { await fn(); } catch (e) { setError(e.message); }
   }
 
-  if (!auth) return <div className="page"><h1>Collab Editor</h1><Login onAuth={handleAuth} /></div>;
+  const createDoc = () =>
+    act(async () => {
+      const d = await api("/documents", { method: "POST", token: auth.token, body: { title: "Untitled" } });
+      setDocs((ds) => [d, ...ds]);
+      window.location.hash = d.id;
+    });
 
-  const current = docs.find((d) => d.id === docId);
+  const renameDoc = (id, title) =>
+    act(async () => {
+      const r = await api(`/documents/${id}`, { method: "PATCH", token: auth.token, body: { title } });
+      setDocs((ds) => ds.map((d) => (d.id === id ? { ...d, title: r.title } : d)));
+    });
+
+  const deleteDoc = (id) =>
+    act(async () => {
+      await api(`/documents/${id}`, { method: "DELETE", token: auth.token });
+      setDocs((ds) => ds.filter((d) => d.id !== id));
+    });
+
+  if (!auth)
+    return (
+      <div className="auth-page">
+        <h1>Collab Editor</h1>
+        <Login onAuth={handleAuth} />
+      </div>
+    );
+
+  const current = docs?.find((d) => d.id === docId);
 
   return (
-    <div className="page">
-      <h1>Collab Editor</h1>
-      <p className="meta">
-        Logged in as <b>{auth.user.name}</b> · <button className="link" onClick={logout}>Log out</button>
-      </p>
+    <>
+      <header className="topbar">
+        <a className="brand" href="#">Collab Editor</a>
+        <span>
+          {auth.user.name} <button onClick={logout}>Log out</button>
+        </span>
+      </header>
 
-      {current ? (
-        <>
-          <button className="link" onClick={() => (window.location.hash = "")}>← All documents</button>
-          <Editor key={current.id} doc={current} token={auth.token} user={auth.user} />
-        </>
-      ) : (
-        <>
-          <button onClick={createDoc}>+ New document</button>
-          <ul className="docs">
-            {docs.map((d) => (
-              <li key={d.id}>
-                <a href={`#${d.id}`}>{d.title}</a> <span className="meta">({d.role})</span>
-              </li>
-            ))}
-          </ul>
-        </>
+      <main className="page">
+        {error && <p className="error">{error}</p>}
+
+        {current ? (
+          <>
+            <a className="back" href="#">← All documents</a>
+            <Editor key={current.id} doc={current} token={auth.token} user={auth.user} onRename={renameDoc} />
+          </>
+        ) : docId && docs !== null ? (
+          <p className="muted">Document not found, or you don't have access. <a href="#">Back to documents</a></p>
+        ) : (
+          <Dashboard
+            docs={docs}
+            onCreate={createDoc}
+            onRename={renameDoc}
+            onDelete={deleteDoc}
+            onShare={setSharing}
+          />
+        )}
+      </main>
+
+      {sharing && (
+        <ShareDialog doc={sharing} token={auth.token} currentUserId={auth.user.id} onClose={() => setSharing(null)} />
       )}
-    </div>
+    </>
   );
 }

@@ -3,10 +3,30 @@ import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "./db.js";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
+
+async function roleOf(docId, userId) {
+  const { rows } = await pool.query(
+    "SELECT role FROM document_members WHERE document_id = $1 AND user_id = $2",
+    [docId, userId]
+  );
+  return rows[0]?.role;
+}
+
+app.use(
+  ["/login", "/signup"],
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many attempts, try again later" },
+  })
+);
 
 const sign = (u) =>
   jwt.sign({ sub: u.id, name: u.name }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -102,6 +122,51 @@ app.post("/documents/:id/members", auth, async (req, res) => {
      ON CONFLICT (document_id, user_id) DO UPDATE SET role = EXCLUDED.role`,
     [req.params.id, target.rows[0].id, role]
   );
+  res.json({ ok: true });
+});
+
+
+// List who has access (owner only).
+app.get("/documents/:id/members", auth, async (req, res) => {
+  if ((await roleOf(req.params.id, req.user.id)) !== "owner")
+    return res.status(403).json({ error: "Only the owner can see members" });
+  const { rows } = await pool.query(
+    `SELECT u.id, u.name, u.email, m.role
+     FROM document_members m JOIN users u ON u.id = m.user_id
+     WHERE m.document_id = $1 ORDER BY m.role, u.name`,
+    [req.params.id]
+  );
+  res.json(rows);
+});
+
+// Rename (owner or editor).
+app.patch("/documents/:id", auth, async (req, res) => {
+  const role = await roleOf(req.params.id, req.user.id);
+  if (role !== "owner" && role !== "editor")
+    return res.status(403).json({ error: "You can't rename this document" });
+  const title = String(req.body?.title || "").trim().slice(0, 200) || "Untitled";
+  await pool.query("UPDATE documents SET title = $2 WHERE id = $1", [req.params.id, title]);
+  res.json({ ok: true, title });
+});
+
+// Delete (owner only). Members are removed by ON DELETE CASCADE.
+app.delete("/documents/:id", auth, async (req, res) => {
+  if ((await roleOf(req.params.id, req.user.id)) !== "owner")
+    return res.status(403).json({ error: "Only the owner can delete" });
+  await pool.query("DELETE FROM documents WHERE id = $1", [req.params.id]);
+  res.json({ ok: true });
+});
+
+// Remove someone's access (owner only, can't remove yourself).
+app.delete("/documents/:id/members/:userId", auth, async (req, res) => {
+  const target = Number(req.params.userId);
+  if ((await roleOf(req.params.id, req.user.id)) !== "owner")
+    return res.status(403).json({ error: "Only the owner can remove members" });
+  if (target === req.user.id) return res.status(400).json({ error: "Owner can't be removed" });
+  await pool.query("DELETE FROM document_members WHERE document_id = $1 AND user_id = $2", [
+    req.params.id,
+    target,
+  ]);
   res.json({ ok: true });
 });
 
