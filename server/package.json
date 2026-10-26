@@ -5,15 +5,16 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js" 
-
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
-
   "dependencies": {
-    "@hocuspocus/server": "^2.15.3"
+    "@hocuspocus/extension-database": "^2.15.3",
+    "@hocuspocus/server": "^2.15.3",
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1"
   }
 }
