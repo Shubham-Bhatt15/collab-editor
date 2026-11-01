@@ -1,0 +1,25 @@
+{
+  "name": "collab-editor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "dev": "concurrently -n sync,api,web -c blue,green,magenta \"npm --prefix server start\" \"npm --prefix server run api\" \"npm --prefix client run dev\"",
+  "db:init": "psql -U postgres -h localhost -d collab -f server/schema.sql"
+ },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shubham-Bhatt15/collab-editor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Shubham-Bhatt15/collab-editor/issues"
+  },
+  "homepage": "https://github.com/Shubham-Bhatt15/collab-editor#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
