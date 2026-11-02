@@ -5,6 +5,8 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
+import AIPanel from "./AIPanel.jsx";
+
 
 const COLORS = ["#e03131", "#2f9e44", "#1971c2", "#f08c00", "#9c36b5", "#0c8599"];
 
@@ -32,10 +34,10 @@ export default function Editor({ doc, token, user, onRename }) {
 
   if (status === "denied") return <p className="error">You don't have access to this document.</p>;
   if (!session) return null;
-  return <EditorInner session={session} doc={doc} user={user} status={status} onRename={onRename} />;;
+  return <EditorInner session={session} doc={doc} user={user} token={token} status={status} onRename={onRename} />;
 }
 
-function EditorInner({ session, doc, user, status, onRename }) {
+function EditorInner({ session, doc, user, token, status, onRename }) {
   const [title, setTitle] = useState(doc.title);
   const canRename = doc.role !== "viewer";
 
@@ -66,6 +68,8 @@ function EditorInner({ session, doc, user, status, onRename }) {
         <span className={`status ${status}`}>● {status}</span>
       </div>
       {doc.role === "viewer" && <p className="muted">You have view-only access.</p>}
+      <AIPanel editor={editor} docId={doc.id} token={token} canEdit={doc.role !== "viewer"} />
+      
       <EditorContent editor={editor} className="editor" />
     </>
   );

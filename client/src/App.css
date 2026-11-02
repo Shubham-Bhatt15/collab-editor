@@ -66,3 +66,11 @@ input, select { padding: 8px 10px; border: 1px solid var(--border); border-radiu
 .collaboration-cursor__label { position: absolute; top: -1.4em; left: -1px; font-size: 12px; font-weight: 600;
   line-height: normal; color: #fff; padding: 0.1rem 0.3rem; border-radius: 3px 3px 3px 0;
   white-space: nowrap; user-select: none; }
+
+
+  .ai-panel { background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ai-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ai-preview { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ai-result { background: #f6f7f9; border-radius: 6px; padding: 10px; white-space: pre-wrap; }
+button:disabled { opacity: .5; cursor: not-allowed; }
