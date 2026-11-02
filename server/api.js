@@ -6,7 +6,7 @@ import { pool } from "./db.js";
 import rateLimit from "express-rate-limit";
 import OpenAI from "openai";
 
-const app = express();
+export const app = express();
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
@@ -260,4 +260,7 @@ app.post("/ai/transform", auth, aiLimiter, async (req, res) => {
     res.end();
   }
 });
-app.listen(3001, () => console.log("API on http://localhost:3001"));
+
+if (process.env.NODE_ENV !== "test") {
+  app.listen(3001, () => console.log("API on http://localhost:3001"));
+}
