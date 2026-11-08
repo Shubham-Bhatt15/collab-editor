@@ -6,7 +6,7 @@ import { pool } from "./db.js";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const server = Server.configure({
-  port: 1234,
+  port: Number(process.env.PORT) || 1234,
   debounce: 2000,
   maxDebounce: 10000,
 

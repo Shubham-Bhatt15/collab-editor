@@ -1,4 +1,4 @@
-const API = "http://localhost:3001";
+const API = import.meta.env.VITE_API_URL;
 
 // Streams an AI result. Calls onToken for each piece. Returns when done.
 export async function streamAI({ docId, action, text, tone, token, signal, onToken }) {

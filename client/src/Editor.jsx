@@ -17,7 +17,7 @@ export default function Editor({ doc, token, user, onRename }) {
   useEffect(() => {
     const ydoc = new Y.Doc();
     const provider = new HocuspocusProvider({
-      url: "ws://localhost:1234",
+      url: import.meta.env.VITE_WS_URL,
       name: doc.id,
       document: ydoc,
       token,

@@ -7,7 +7,8 @@ import rateLimit from "express-rate-limit";
 import OpenAI from "openai";
 
 export const app = express();
-app.use(cors({ origin: "http://localhost:5173" }));
+app.set("trust proxy", 1);
+app.use(cors({ origin: process.env.CLIENT_ORIGIN||"http://localhost:5173" }));
 app.use(express.json());
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -261,6 +262,7 @@ app.post("/ai/transform", auth, aiLimiter, async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 3001;
 if (process.env.NODE_ENV !== "test") {
-  app.listen(3001, () => console.log("API on http://localhost:3001"));
+  app.listen(PORT, () => console.log(`API on port ${PORT}`));
 }
